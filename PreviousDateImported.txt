@@ -1,0 +1,6 @@
+This file shows when the last availability objects were imported.
+Only first intakes that have occurred since 
+this date should be used for the calculation script.
+
+
+6/8/2022
