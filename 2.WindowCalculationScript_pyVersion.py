@@ -4,8 +4,6 @@ import pandas as pd
 ## running initial data prep/transform script
 exec(open("1.IntakeDateScript.py").read())
 
-#df = pd.read_csv("/Users/robertjanikowski/Documents/The Alex Pandas/All Questionnaire Availability/All Client Questionnaire Data - R Script CSV.csv", sep=',', header=0)
-#df = pd.read_csv(r"C:\Users\rjanikowski\Documents\Civi Imports\All Client Questioannaire Import\JupyterNotebook\All Client Questionnaire Data - R Script CSV.csv", sep=',', header=0)
 df = pd.read_csv("../AvailabilityWindowPrepList/1.OUTPUT_intakeDates.csv", sep=',', header=0)
 df.drop(df.columns[0],axis=1, inplace=True)
 
@@ -36,8 +34,7 @@ class Clinic(object):
         self.availabilityList = self.createAvailabilityList(AlexID)
     
     
-    
-        
+    ## establishing window timings, custom ones are added at the end    
     def Open3m(self):
         return (pd.to_datetime(self.intakeDate) + pd.Timedelta(69, unit='D'),"3m","Opening")
     def Closed3m(self):
@@ -71,25 +68,39 @@ class Clinic(object):
     def Closed24m(self):
         return (pd.to_datetime(self.intakeDate) + pd.Timedelta(741, unit='D'),"24m","Closing")
     
+    #visionHealthBusSpecific
+    def vhbOpen(self):
+        return (pd.to_datetime(self.intakeDate) + pd.Timedelta(70, unit='D'),"VHB_2m","Opening")
+    def vhbClose(self):
+        return (pd.to_datetime(self.intakeDate) + pd.Timedelta(98, unit='D'),"VHB_2m","Closing")
     
     def changeTiming(self, clinicType):
         if clinicType == "Homebase" or clinicType == "Rapid Access Addiction Medicine" or clinicType == "Prelude" or clinicType == "Abbeydale" :
             return 3
+        elif clinicType == "Vision Health Bus":
+            return "VHB"
         else:
             return 6
     
     def createAvailabilityList(self, AlexID):
         functions3m = [self.Open3m, self.Closed3m,self.Open6m, self.Closed6m,self.Open9m, self.Closed9m,self.Open12m, self.Closed12m,self.Open15m, self.Closed15m,self.Open18m, self.Closed18m,self.Open21m, self.Closed21m,self.Open24m, self.Closed24m]
         functions6m = [self.Open6m,self.Closed6m,self.Open12m,self.Closed12m,self.Open18m,self.Closed18m,self.Open24m,self.Closed24m]
+        functionsVHB = [self.vhbOpen, self.vhbClose]
         availabilityObjectList = []
         if self.timing == 6:
             for fn in functions6m:
                 availabilityObjectList.append(Availability(fn()[2], fn()[0], self.clinicType, fn()[1],AlexID))
                 
             return availabilityObjectList
-        else:
+        elif self.timing == 3:
             availabilityObjectList = []
             for fn in functions3m:
+                availabilityObjectList.append(Availability(fn()[2], fn()[0], self.clinicType, fn()[1],AlexID))
+                
+            return availabilityObjectList
+        elif self.timing == "VHB":
+            availabilityObjectList = []
+            for fn in functionsVHB:
                 availabilityObjectList.append(Availability(fn()[2], fn()[0], self.clinicType, fn()[1],AlexID))
                 
             return availabilityObjectList
@@ -103,8 +114,6 @@ class Client:
     def addClinic(self, clinic):
         self.clinicList.append(clinic)
         
-
-
 # In[ ]:
     
 clientDict = dict()
@@ -116,11 +125,11 @@ for rowIndex, row in df.iterrows():
     for columnIndex, value in row.items():
         print(columnIndex)
         if columnIndex == "AlexID":
-            client = Client(value)
-            clientDict[client.id] = client
+            print(columnIndex)
         
         elif columnIndex == "Contact ID":
-            print(columnIndex)
+            client = Client(value)
+            clientDict[client.id] = client
         
         elif pd.isna(value) == False:
             string = str(columnIndex).split(".")
