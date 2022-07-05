@@ -7,6 +7,10 @@ exec(open("1.IntakeDateScript.py").read())
 df = pd.read_csv("../AvailabilityWindowPrepList/1.OUTPUT_intakeDates.csv", sep=',', header=0)
 df.drop(df.columns[0],axis=1, inplace=True)
 
+
+## filter out clinicTypes that shouldn't be be imported due to not being on the timing system
+
+
 class Availability:
     def __init__(self, type, date, clinicType, monthType,AlexID):
         self.type = type
@@ -70,9 +74,9 @@ class Clinic(object):
     
     #visionHealthBusSpecific
     def vhbOpen(self):
-        return (pd.to_datetime(self.intakeDate) + pd.Timedelta(70, unit='D'),"VHB_2m","Opening")
+        return (pd.to_datetime(self.intakeDate) + pd.Timedelta(70, unit='D'),"VHB_10-14wks","Opening")
     def vhbClose(self):
-        return (pd.to_datetime(self.intakeDate) + pd.Timedelta(98, unit='D'),"VHB_2m","Closing")
+        return (pd.to_datetime(self.intakeDate) + pd.Timedelta(98, unit='D'),"VHB_10-14wks","Closing")
     
     def changeTiming(self, clinicType):
         if clinicType == "Homebase" or clinicType == "Rapid Access Addiction Medicine" or clinicType == "Prelude" or clinicType == "Abbeydale" :
@@ -153,9 +157,22 @@ for client in clientDict.values():
 #print(clientDict["ROBAST11092004"].clinicList[0].availabilityList[0].monthType)
 #print(len(clientDict["ROBAST11092004"].clinicList[0].availabilityList))
 
+
+#function for lambda operation to assign subject a string value (BundleOpening or BundleClosing)
+def subject(value):
+    if value == 'Opening':
+        print(value)
+        return 'BundleOpening'
+    elif 'Closing':
+        return 'BundleClosing'
+    
+    
 #putting each element in list into a dictionary (deconstructs object to be it's parameters)
 df3 = pd.DataFrame.from_records([a.to_dict() for a in totalAvailabilityList])
 df3 = df3.rename(columns={'AlexID':'ContactID'})
+df3['Activity_ID_Label'] = 'Availability Activity'
+#df3['Activity_ID_'] = 545
+df3['Subject'] = df3.apply(lambda x: subject(x['type']), axis=1)
 df3.to_csv('2.OUTPUT_calculated_availability.csv', index=False)
 
 
